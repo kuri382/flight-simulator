@@ -10,6 +10,7 @@ import { Aircraft } from './simulation/aircraft';
 import { Aerodynamics } from './simulation/aerodynamics';
 import { Integrator } from './simulation/integrator';
 import { State } from './simulation/interfaces';
+import { Environment } from './simulation/environment';
 
 // animation settings
 import { createClouds } from './animation/cloud';
@@ -39,8 +40,8 @@ const subCanvas = document.getElementById('subCanvas') as HTMLCanvasElement;
 const initialState: State = {
     position: [0, 0, 0],
     orientation: [1, 0, 0, 0],
-    velocity: [0, 0, 0],
-    angularVelocity: [0, 0, 0]
+    velocityBody: [0, 0, 0],
+    angularVelocityBody: [0, 0, 0]
 };
 
 // Three.jsシーンの初期化
@@ -68,9 +69,15 @@ const clouds = createClouds();
 clouds.forEach(cloud => mainScene.add(cloud));
 
 // シミュレーション関連
-const aircraft = new Aircraft(initialState, 1000, [1000, 1000, 1000], new Aerodynamics());
+const aircraft = new Aircraft(
+    initialState,
+    1000,
+    [1000, 1000, 1000],
+    new Aerodynamics(),
+    new Environment(),
+);
 const integrator = new Integrator();
-const simManager = new SimulationManager(aircraft, integrator, 0.01);
+const simManager = new SimulationManager(aircraft, 0.005);
 
 let stopSimulation = false;
 
@@ -85,7 +92,7 @@ function animate() {
         elevator: uiInputs.elevator,
         rudder: uiInputs.rudder,
         throttle: uiInputs.throttle,
-        wind: [0, 0, 0] as [number, number, number]
+        windEarth: [0, 0, 0] as [number, number, number]
     };
 
     simManager.step(inputs);
@@ -117,11 +124,16 @@ function animate() {
             state.position[1],
             state.position[2]
         );
+        mainCamera.rotation.set(
+            THREE.MathUtils.degToRad(0), // X軸回転
+            THREE.MathUtils.degToRad(90), // Y軸回転
+            THREE.MathUtils.degToRad(0)   // Z軸回転
+        );
 
         const airspeedDirection = new THREE.Vector3(
-            state.velocity[0],
-            state.velocity[1],
-            state.velocity[2]
+            state.velocityBody[0],
+            state.velocityBody[1],
+            state.velocityBody[2]
         ).normalize();
 
         // 噴射を更新
@@ -131,9 +143,9 @@ function animate() {
         updateAltitudeDisplay(state.position[2]);
     }
 
-    const angleOfAttack = Math.atan2(state.velocity[2], state.velocity[0]) * (180 / Math.PI);
+    const angleOfAttack = Math.atan2(state.velocityBody[2], state.velocityBody[0]) * (180 / Math.PI);
     const airspeed = Math.sqrt(
-        state.velocity[0] ** 2 + state.velocity[1] ** 2 + state.velocity[2] ** 2
+        state.velocityBody[0] ** 2 + state.velocityBody[1] ** 2 + state.velocityBody[2] ** 2
     );
 
     const timeSeries = simManager.getTimeSeriesData();

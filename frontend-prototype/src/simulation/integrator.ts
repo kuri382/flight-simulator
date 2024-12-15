@@ -15,15 +15,15 @@ export class Integrator {
                 state.orientation[2] + derivative.orientation[2] * dt,
                 state.orientation[3] + derivative.orientation[3] * dt
             ],
-            velocity: [
-                state.velocity[0] + derivative.velocity[0] * dt,
-                state.velocity[1] + derivative.velocity[1] * dt,
-                state.velocity[2] + derivative.velocity[2] * dt
+            velocityBody: [
+                state.velocityBody[0] + derivative.velocityBody[0] * dt,
+                state.velocityBody[1] + derivative.velocityBody[1] * dt,
+                state.velocityBody[2] + derivative.velocityBody[2] * dt
             ],
-            angularVelocity: [
-                state.angularVelocity[0] + derivative.angularVelocity[0] * dt,
-                state.angularVelocity[1] + derivative.angularVelocity[1] * dt,
-                state.angularVelocity[2] + derivative.angularVelocity[2] * dt
+            angularVelocityBody: [
+                state.angularVelocityBody[0] + derivative.angularVelocityBody[0] * dt,
+                state.angularVelocityBody[1] + derivative.angularVelocityBody[1] * dt,
+                state.angularVelocityBody[2] + derivative.angularVelocityBody[2] * dt
             ]
         };
     }

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 export function createTerrain(): THREE.Mesh {
   // 地表のジオメトリを作成
-  const terrainGeometry = new THREE.PlaneGeometry(2000, 2000, 100, 100); // 細分化の設定
+  const terrainGeometry = new THREE.PlaneGeometry(2000, 2000, 1000, 100); // 細分化の設定
   terrainGeometry.rotateX(-Math.PI / 2); // 平面を水平に配置
 
   // 頂点をノイズで変形
