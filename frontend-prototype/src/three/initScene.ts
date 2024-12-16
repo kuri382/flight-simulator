@@ -14,12 +14,28 @@ export function initScene(canvas: HTMLCanvasElement) {
         }
     );
     renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    directionalLight.position.set(10, 10, 10);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 4.0);
+    directionalLight.position.set(100, 100, 10);
+    directionalLight.castShadow = true; // 影を有効化
+
+    // シャドウマップの設定
+    directionalLight.shadow.mapSize.width = 2048; // 解像度を上げて影を滑らかに
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 200;
+
+    // シャドウカメラのサイズを調整
+    directionalLight.shadow.camera.left = -200;
+    directionalLight.shadow.camera.right = 200;
+    directionalLight.shadow.camera.top = 200;
+    directionalLight.shadow.camera.bottom = -200;
+
     scene.add(directionalLight);
 
     return { scene, camera, renderer };

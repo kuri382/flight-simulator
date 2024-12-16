@@ -114,14 +114,13 @@ export class Aircraft {
             ]
         };
 
-        // 高度が0m未満の場合に修正
-        if (this.state.position[2] > -1) {
-            this.state.position[2] = 0; // 地面に位置を固定
-            if (this.state.velocityBody[2] > 0) {
-                this.state.velocityBody[2] = 0; // 下向き速度を停止
+        // 高度が0m未満の場合に修正 Y軸鉛直方向
+        if (this.state.position[1] < 0) {
+            this.state.position[1] = 0;
+            if (this.state.velocityBody[1] < 0) {
+                this.state.velocityBody[1] = 0;
             }
         }
-
         // 四元数正規化
         const norm = Math.sqrt(
             this.state.orientation[0] ** 2 +

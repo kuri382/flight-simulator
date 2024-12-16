@@ -8,8 +8,8 @@ export async function loadModel(scene: THREE.Scene, path: string): Promise<THREE
         loader.load(
             path,
             (object) => {
-                object.scale.set(0.5, 0.5, 0.5);
-
+                const size = 0.2;
+                object.scale.set(size, size, size);
                 // バウンディングボックスで中心を取得して移動
                 const box = new THREE.Box3().setFromObject(object);
                 const center = box.getCenter(new THREE.Vector3());
@@ -19,6 +19,8 @@ export async function loadModel(scene: THREE.Scene, path: string): Promise<THREE
                 object.traverse((child) => {
                     if (child instanceof THREE.Mesh) {
                         child.rotation.y = Math.PI / 2; // ピッチ方向に90度回転
+                        child.castShadow = true; // 機体が影をキャスト
+                        child.receiveShadow = false;
                     }
                 });
 
