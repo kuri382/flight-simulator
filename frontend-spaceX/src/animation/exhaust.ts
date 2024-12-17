@@ -29,9 +29,9 @@ const defaultConfig: Required<ExhaustConfig> = {
     direction: new THREE.Vector3(0, -1, 0),
     baseOpacity: 0.1,
     maxOpacity: 1.0,
-    baseSize: 1.5, // 0.3
-    maxSizeScale: 3.0, //2.0
-    velocityScale: 5, //0.5
+    baseSize: 1.5,
+    maxSizeScale: 3.0,
+    velocityScale: 5,
     lifetimeScale: 0.5,
     textureSize: 0.02,
     blending: THREE.AdditiveBlending,
