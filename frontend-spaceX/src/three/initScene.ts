@@ -17,16 +17,16 @@ export function initScene(canvas: HTMLCanvasElement) {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 4.0);
     scene.add(ambientLight);
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 4.0);
     directionalLight.position.set(100, 100, 10);
-    directionalLight.castShadow = true; // 影を有効化
+    directionalLight.castShadow = true;
 
     // シャドウマップの設定
-    directionalLight.shadow.mapSize.width = 2048; // 解像度を上げて影を滑らかに
-    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
     directionalLight.shadow.camera.near = 0.5;
     directionalLight.shadow.camera.far = 200;
 

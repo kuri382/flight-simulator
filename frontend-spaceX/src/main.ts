@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+
+// three settings
 import { initScene } from './three/initScene';
+import { initControls } from './three/initControls';
 import { loadModel } from './three/loadModel';
-import { initPositionChart, initOrientationChart, initFlightParamsChart } from './chart/initCharts';
 
 // ui settings
 import { getInputs } from './ui/ui';
@@ -26,6 +28,7 @@ import { createYellowLine } from './animation/runway';
 import { Exhaust } from './animation/exhaust';
 
 // chart settings
+import { initPositionChart, initOrientationChart, initFlightParamsChart } from './chart/initCharts';
 import { updatePositionChart } from './chart/update/position';
 import { updateOrientationChart } from './chart/update/orientation';
 import { updateFlightParamChart } from './chart/update/flightParam';
@@ -52,14 +55,19 @@ const initialState: State = {
     angularVelocityBody: [0, 0, 0]
 };
 
+// ミッションゴール設定
 const destination = {
     position: [300, 1, 300] as [number, number, number],
     velocity: [20, 0, 0] as [number, number, number]
 };
+// ミッション達成判定用のしきい値
+const missionHorizontalThreshold = 100; // 半径100m以内の到達
+const missionAltitudeThreshold = 4; // 半径100m以内の到達で
 
-// Three.jsシーンの初期化
+// アニメーションシーンの初期化
 const { scene: mainScene, camera: mainCamera, renderer: mainRenderer } = initScene(threeCanvas);
 const { scene: subScene, camera: subCamera, renderer: subRenderer } = initScene(subCanvas);
+const controls = initControls(mainCamera, mainRenderer, new THREE.Vector3(0, 9, 0.1));
 
 // モデルの読み込み
 let aircraftMesh: THREE.Object3D | null = null;
@@ -68,7 +76,6 @@ let exhaustSystem: Exhaust | null = null;
 let launchSiteMesh: THREE.Object3D | null = null;
 let targetSiteMesh: THREE.Object3D | null = null;
 
-//loadModel(mainScene, '/models/spacex_starship_sn20_bn4.glb', 0.5).then((model) => {
 loadModel(mainScene, '/models/spacex_sn24_superheavy_bn7.glb', 0.5).then((model) => {
     aircraftMesh = model;
 
@@ -93,14 +100,7 @@ loadModel(mainScene, '/models/environment/launch_site.glb', 1.0, { x: 0, y: 0, z
     targetSiteMesh = model;
 });
 
-const autopilotController = new AutopilotController();
-initializeUI(autopilotController);
-const controller = new Controller();
-
-const throttleSound = new ThrottleSoundController(mainScene, mainCamera, '/sounds/jet-sound.mp3');
-const airspeedSound = new ThrottleSoundController(mainScene, mainCamera, '/sounds/barner-sound.mp3');
-
-// 背景モデルの追加
+// 環境モデルの追加
 const terrain = createTerrain();
 const horizon = createHorizon();
 const clouds = createClouds();
@@ -110,9 +110,17 @@ mainScene.add(horizon);
 mainScene.add(yellowLine);
 clouds.forEach(cloud => mainScene.add(cloud));
 
+// 環境サウンドの追加
+const throttleSound = new ThrottleSoundController(mainScene, mainCamera, '/sounds/jet-sound.mp3');
+const airspeedSound = new ThrottleSoundController(mainScene, mainCamera, '/sounds/barner-sound.mp3');
+
+// 入力系の設定
+const autopilotController = new AutopilotController();
+initializeUI(autopilotController);
+const controller = new Controller();
 const windModel = new Wind([50, 0, 0], 2); // 5 m/s の東風 + 乱流強度2
 
-// シミュレーション関連
+// 機体諸元の設定
 const aircraft = new Aircraft(
     initialState,
     200000,
@@ -120,16 +128,12 @@ const aircraft = new Aircraft(
     new Aerodynamics(),
     new Environment(),
     windModel
-
 );
-const simManager = new SimulationManager(aircraft, 0.1);
 
+// シミュレーションサイクルの設定
+const simManager = new SimulationManager(aircraft, 0.1); // ms
 let stopSimulation = false;
 let lastTime = performance.now();
-
-
-// 達成判定用のしきい値
-const closeThreshold = 100;
 
 function animate() {
     if (stopSimulation) return;
@@ -174,14 +178,11 @@ function animate() {
     const currentAltitude = state.position[1]
 
     // 目標地点付近で停止判定
-    if (horizontalDist < closeThreshold && currentAltitude < 4) {
+    if (horizontalDist < missionHorizontalThreshold && currentAltitude < missionAltitudeThreshold) {
         // 速度を0に設定(最終状態を上書き)
         const finalState = simManager.getState();
         finalState.velocityBody = [0, 0, 0];
         finalState.angularVelocityBody = [0, 0, 0];
-
-        console.log('Reached destination. Simulation stopped.');
-        return;
     }
 
     if (launchSiteMesh) {
@@ -189,7 +190,7 @@ function animate() {
     }
 
     if (targetSiteMesh) {
-        targetSiteMesh.position.set(destination.position[0], destination.position[1], destination.position[2]);
+        targetSiteMesh.position.set(destination.position[0]-25, destination.position[1], destination.position[2]-100);
     }
 
     if (aircraftMesh) {
@@ -203,16 +204,6 @@ function animate() {
         aircraftMesh.position.set(state.position[0], state.position[1], state.position[2]);
         aircraftMesh.setRotationFromQuaternion(q);
 
-        mainCamera.position.set(
-            state.position[0] + 30,
-            state.position[1] + 15,
-            state.position[2] + 10,
-        );
-        mainCamera.lookAt(
-            state.position[0],
-            state.position[1] + 10,
-            state.position[2],
-        );
         aircraftMesh.add(subCamera);
 
         updateAltitudeDisplay(state.position[1]);
@@ -237,11 +228,17 @@ function animate() {
     orientationChart.update();
     flightParamsChart.update();
 
+    controls.target.set(
+        state.position[0],
+        state.position[1] + 10,
+        state.position[2]
+    );
+    controls.update();
+
     mainRenderer.render(mainScene, mainCamera);
     subRenderer.render(mainScene, subCamera);
 }
 
-// シミュレーションタイマー
 setTimeout(() => {
     console.log('シミュレーションを停止しました。');
     stopSimulation = true;

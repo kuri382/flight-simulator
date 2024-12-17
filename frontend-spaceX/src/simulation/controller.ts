@@ -57,8 +57,8 @@ export class Controller {
     constructor() {
         // Adjust gains as needed
         this.altitudePID = new PID(0.1, 0.0001, 0.005);
-        this.pitchPID = new PID(0.1, 0.0001, 0.05);
-        this.yawPID = new PID(0.1, 0.0001, 0.05);
+        this.pitchPID = new PID(0.15, 0.0001, 0.05);
+        this.yawPID = new PID(0.15, 0.0001, 0.05);
         this.speedPID = new PID(0.05, 0.0001, 0.01);
     }
 
