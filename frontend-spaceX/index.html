@@ -143,6 +143,21 @@
             line-height: 20px;
             border-radius: 5px;
         }
+
+        #autopilotToggleButton {
+            position: absolute;
+            margin: 10px;
+            top: 70px;
+            right: 10px;
+            width: 200px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            text-align: center;
+            border-radius: 5px;
+        }
     </style>
 </head>
 
@@ -150,17 +165,19 @@
     <div id="mainContent">
         <div id="threeContainer">
             <div id="controls">
-                <label><b>Aileron</b>
-                    <p>roll left　　　　　roll right</p>
-                    <input type="range" id="aileronSlider" min="-30" max="30" value="0">
+                <p>Cold Gas Thruster</p>
+                <label><b>Pitch Thruster</b>
+                    <input type="range" id="thrustPitchSlider" min="-30" max="30" value="0">
                 </label>
-                <label><b>Elevator</b>
-                    <p>pitch up　　　pitch down</p>
-                    <input type="range" id="elevatorSlider" min="-3" max="3" step="0.01" value="0">
+                <label><b>Yaw Thruster</b>
+                    <input type="range" id="thrustYawSlider" min="-3" max="3" step="0.01" value="0">
                 </label>
-                <label><b>Rudder</b>
-                    <p>yaw left　　　　roll right</p>
-                    <input type="range" id="rudderSlider" min="-30" max="30" value="0">
+                <p>Grid Fin</p>
+                <label><b>Pitch Grid</b>
+                    <input type="range" id="gridFinPitchSlider" min="-30" max="30" value="0">
+                </label>
+                <label><b>Yaw Grid</b>
+                    <input type="range" id="gridFinYawSlider" min="-30" max="30" value="0">
                 </label>
                 <label><b>Throttle</b>
                     <p>down　　　　　　　　up</p>
@@ -171,6 +188,7 @@
             <div>
                 <canvas id="altitudeDisplay"></canvas>
                 <canvas id="speedDisplay"></canvas>
+                <button id="autopilotToggleButton">Autopilot: OFF</button>
             </div>
 
             <canvas id="threeCanvas"></canvas>

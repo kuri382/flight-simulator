@@ -6,9 +6,10 @@ export interface State {
 }
 
 export interface Inputs {
-    aileron: number;
-    elevator: number;
-    rudder: number;
+    thrustPitch: number;
+    thrustYaw: number;
+    gridFinPitch: number;
+    gridFinYaw: number;
     throttle: number;
     windEarth: [number, number, number]; // Wind in Earth Frame
 }

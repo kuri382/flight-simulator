@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export function initScene(canvas: HTMLCanvasElement) {
     const scene = new THREE.Scene();
 
-    const camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / canvas.clientHeight, 0.1, 10000);
     camera.position.set(0, 5, 10);
     camera.lookAt(0, 0, 0);
 

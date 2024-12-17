@@ -1,38 +1,64 @@
 import * as THREE from 'three';
 
-export function createTerrain(): THREE.Mesh {
-  // 地表のジオメトリを作成
-  const terrainGeometry = new THREE.PlaneGeometry(1000, 1000, 500, 100); // 細分化の設定
-  terrainGeometry.rotateX(-Math.PI / 2); // 平面を水平に配置
+export function createTerrain({
+  terrainSize = 5000,
+  gridDivisions = 200,
+  numMountains = 30,
+  maxHeight = 100,
+  exclusionRadius = 600
+} = {}): THREE.Mesh {
 
-  // 頂点をノイズで変形
+  const terrainGeometry = new THREE.PlaneGeometry(terrainSize, terrainSize, gridDivisions, gridDivisions);
+  terrainGeometry.rotateX(-Math.PI / 2);
+
   const vertices = terrainGeometry.attributes.position.array;
+  const mountainPeaks = [];
+
+  // ランダムな山の頂点を生成
+  for (let i = 0; i < numMountains; i++) {
+    let x, z;
+    do {
+      x = (Math.random() - 0.5) * terrainSize;
+      z = (Math.random() - 0.5) * terrainSize;
+    } while (Math.sqrt(x * x + z * z) < exclusionRadius);
+
+    mountainPeaks.push({ x, z });
+  }
+
   for (let i = 0; i < vertices.length; i += 3) {
     const x = vertices[i];
     const z = vertices[i + 2];
+    let y = -10; // 最低の高さのオフセット
 
-    // x方向に500、z方向に幅10の範囲を除外
-    if (x >= -400 && x <= 400 && z >= -20 && z <= 20) {
-      vertices[i + 1] = -0.2; // 高さを0に設定
-    } else {
-      // ノイズで高さを生成
-      const y = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 20;
-      vertices[i + 1] = y;
+    // 中心部の除外範囲を考慮
+    const centralDistance = Math.sqrt(x * x + z * z);
+    if (centralDistance < exclusionRadius) {
+      vertices[i + 1] = y; // 中心部には高さを設定しない
+      continue;
     }
+
+    // 各山の頂点との距離に基づいて高さを決定
+    mountainPeaks.forEach(peak => {
+      const dx = x - peak.x;
+      const dz = z - peak.z;
+      const distance = Math.sqrt(dx * dx + dz * dz);
+      // 高さを可変にするロジック: 基準の高さ - 距離に応じた減少分
+      const height = Math.max(0, maxHeight - (distance * 0.1));
+      y += height;
+    });
+
+    vertices[i + 1] = y;
   }
 
-  // 頂点更新を通知
-  terrainGeometry.attributes.position.needsUpdate = true;
-  terrainGeometry.computeVertexNormals(); // 法線を再計算
 
-  // マテリアルを作成
+  terrainGeometry.attributes.position.needsUpdate = true;
+  terrainGeometry.computeVertexNormals();
+
   const terrainMaterial = new THREE.MeshStandardMaterial({
-    color: 0x583822, // 茶色
-    wireframe: false, // ワイヤーフレームを無効化
+    color: 0x583822,
+    wireframe: false,
   });
 
-  // 地表のメッシュを作成
   const terrain = new THREE.Mesh(terrainGeometry, terrainMaterial);
-
-  return terrain; // 作成した地表を返す
+  return terrain;
 }

@@ -2,7 +2,10 @@ import * as THREE from 'three';
 import { initScene } from './three/initScene';
 import { loadModel } from './three/loadModel';
 import { initPositionChart, initOrientationChart, initFlightParamsChart } from './chart/initCharts';
-import { getInputs } from './ui';
+
+// ui settings
+import { getInputs } from './ui/ui';
+import { AutopilotController, initializeUI } from './ui/autopilotController';
 
 // simulation settings
 import { SimulationManager } from './simulation/simulationManager';
@@ -11,6 +14,7 @@ import { Aerodynamics } from './simulation/aerodynamics';
 import { State } from './simulation/interfaces';
 import { Environment } from './simulation/environment';
 import { Wind } from './simulation/wind';
+import { Controller } from './simulation/controller';
 
 // animation settings
 import { createClouds } from './animation/cloud';
@@ -48,6 +52,11 @@ const initialState: State = {
     angularVelocityBody: [0, 0, 0]
 };
 
+const destination = {
+    position: [300, 1, 300] as [number, number, number],
+    velocity: [20, 0, 0] as [number, number, number]
+};
+
 // Three.jsシーンの初期化
 const { scene: mainScene, camera: mainCamera, renderer: mainRenderer } = initScene(threeCanvas);
 const { scene: subScene, camera: subCamera, renderer: subRenderer } = initScene(subCanvas);
@@ -56,25 +65,37 @@ const { scene: subScene, camera: subCamera, renderer: subRenderer } = initScene(
 let aircraftMesh: THREE.Object3D | null = null;
 let aircraftMeshSub: THREE.Object3D | null = null;
 let exhaustSystem: Exhaust | null = null;
+let launchSiteMesh: THREE.Object3D | null = null;
+let targetSiteMesh: THREE.Object3D | null = null;
 
 //loadModel(mainScene, '/models/spacex_starship_sn20_bn4.glb', 0.5).then((model) => {
 loadModel(mainScene, '/models/spacex_sn24_superheavy_bn7.glb', 0.5).then((model) => {
     aircraftMesh = model;
 
-    // サブシーン用にもクローンを作成し保持
     aircraftMeshSub = model.clone();
     aircraftMeshSub.name = 'subAircraft';
     subScene.add(aircraftMeshSub);
 
-    // カメラをコックピット付近に配置 (値は機体モデルに合わせて微調整)
     aircraftMeshSub.add(subCamera);
-    subCamera.position.set(0.5, -4, -10);
-    subCamera.lookAt(17, -30, 0);
+    subCamera.position.set(0.5, -4, -2);
+    subCamera.lookAt(15, -40, 0);
 
     exhaustSystem = new Exhaust('/textures/flames_mini.png');
     aircraftMesh.add(exhaustSystem.object3D);
     exhaustSystem.object3D.position.set(0, 0, 0);
 });
+
+loadModel(mainScene, '/models/environment/launch_site.glb', 1.0, { x: 0, y: 0, z: 1 }).then((model) => {
+    launchSiteMesh = model;
+});
+
+loadModel(mainScene, '/models/environment/launch_site.glb', 1.0, { x: 0, y: 0, z: 1 }).then((model) => {
+    targetSiteMesh = model;
+});
+
+const autopilotController = new AutopilotController();
+initializeUI(autopilotController);
+const controller = new Controller();
 
 const throttleSound = new ThrottleSoundController(mainScene, mainCamera, '/sounds/jet-sound.mp3');
 const airspeedSound = new ThrottleSoundController(mainScene, mainCamera, '/sounds/barner-sound.mp3');
@@ -101,10 +122,14 @@ const aircraft = new Aircraft(
     windModel
 
 );
-const simManager = new SimulationManager(aircraft, 0.01);
+const simManager = new SimulationManager(aircraft, 0.1);
 
 let stopSimulation = false;
 let lastTime = performance.now();
+
+
+// 達成判定用のしきい値
+const closeThreshold = 100;
 
 function animate() {
     if (stopSimulation) return;
@@ -115,20 +140,57 @@ function animate() {
     lastTime = currentTime;
 
     const uiInputs = getInputs();
-    const inputs = {
-        aileron: uiInputs.aileron,
-        elevator: uiInputs.elevator,
-        rudder: uiInputs.rudder,
-        throttle: uiInputs.throttle,
-        windEarth: [0, 0, 0] as [number, number, number]
-    };
+
+    // 自動制御機
+    const state = simManager.getState();
+
+    let inputs;
+    if (autopilotController.isEnabled()) {
+        // 自動制御ONの場合、自動コントローラから入力生成
+        inputs = controller.getControlInputs(state, destination, deltaTime);
+    } else {
+        // 手動入力
+        inputs = {
+            thrustPitch: uiInputs.thrustPitch,
+            thrustYaw: uiInputs.thrustYaw,
+            gridFinPitch: uiInputs.gridFinPitch,
+            gridFinYaw: uiInputs.gridFinYaw,
+            throttle: uiInputs.throttle,
+            windEarth: [0, 0, 0] as [number, number, number]
+        };
+    }
 
     simManager.step(inputs);
-    const state = simManager.getState();
+
     const airspeed = Math.sqrt(
         state.velocityBody[0] ** 2 + state.velocityBody[1] ** 2 + state.velocityBody[2] ** 2
     );
     const angleOfAttack = Math.atan2(state.velocityBody[1], state.velocityBody[0]);
+
+    // 目標地点との水平距離計算
+    const dx = destination.position[0] - state.position[0];
+    const dz = destination.position[2] - state.position[2];
+    const horizontalDist = Math.sqrt(dx * dx + dz * dz);
+    const currentAltitude = state.position[1]
+
+    // 目標地点付近で停止判定
+    if (horizontalDist < closeThreshold && currentAltitude < 4) {
+        // 速度を0に設定(最終状態を上書き)
+        const finalState = simManager.getState();
+        finalState.velocityBody = [0, 0, 0];
+        finalState.angularVelocityBody = [0, 0, 0];
+
+        console.log('Reached destination. Simulation stopped.');
+        return;
+    }
+
+    if (launchSiteMesh) {
+        launchSiteMesh.position.set(0, 1, 0);
+    }
+
+    if (targetSiteMesh) {
+        targetSiteMesh.position.set(destination.position[0], destination.position[1], destination.position[2]);
+    }
 
     if (aircraftMesh) {
         const q = new THREE.Quaternion(
@@ -141,7 +203,6 @@ function animate() {
         aircraftMesh.position.set(state.position[0], state.position[1], state.position[2]);
         aircraftMesh.setRotationFromQuaternion(q);
 
-        // mainCamera(外部視点カメラ)
         mainCamera.position.set(
             state.position[0] + 30,
             state.position[1] + 15,
