@@ -96,7 +96,7 @@ export class Aircraft {
     update(dt: number, inputs: Inputs): void {
         const derivative = this.computeDerivative(inputs);
 
-        // 状態更新 (シンプルなEuler法)
+        // 状態更新
         this.state = {
             position: [
                 this.state.position[0] + derivative.position[0] * dt,

@@ -48,7 +48,7 @@ export class Renderer {
             // Apply additional rotation to match Three.js frame?
             // For example a rotation that maps NED axes to Three.js axes
             const nedToThree = new THREE.Quaternion();
-            // This depends on the chosen axis mapping. 
+            // This depends on the chosen axis mapping.
             // One might first rotate around Y axis by 90 deg, etc.
 
             const finalQ = q.multiply(nedToThree);

@@ -5,13 +5,13 @@ Chart.register(LinearScale, CategoryScale);
 
 export function initPositionChart(canvas: HTMLCanvasElement): Chart {
     return new Chart(canvas.getContext('2d')!, {
-        type: 'line',
+        type: 'scatter',
         data: {
             labels: [] as number[],
             datasets: [
                 { label: 'X Position', data: [] as number[], borderColor: 'red', fill: false },
-                { label: 'Y Position', data: [] as number[], borderColor: 'green', fill: false },
-                { label: 'Z Position', data: [] as number[], borderColor: 'blue', fill: false }
+                { label: 'Z Position（高度）', data: [] as number[], borderColor: 'green', fill: false },
+                { label: 'Y Position', data: [] as number[], borderColor: 'blue', fill: false }
             ]
         },
         options: {
@@ -26,7 +26,7 @@ export function initPositionChart(canvas: HTMLCanvasElement): Chart {
 
 export function initOrientationChart(canvas: HTMLCanvasElement): Chart {
     return new Chart(canvas.getContext('2d')!, {
-        type: 'line',
+        type: 'scatter',
         data: {
             labels: [] as number[],
             datasets: [
@@ -47,12 +47,12 @@ export function initOrientationChart(canvas: HTMLCanvasElement): Chart {
 
 export function initFlightParamsChart(canvas: HTMLCanvasElement): Chart {
     return new Chart(canvas.getContext('2d')!, {
-        type: 'line',
+        type: 'scatter',
         data: {
             labels: [] as number[],
             datasets: [
-                { label: 'Angle of Attack (AoA)', data: [] as number[], borderColor: 'pink', fill: false },
-                { label: 'Airspeed', data: [] as number[], borderColor: 'cyan', fill: false }
+                { label: '迎角 (AoA)', data: [] as number[], borderColor: 'red', fill: false },
+                { label: '対気速度', data: [] as number[], borderColor: 'blue', fill: false }
             ]
         },
         options: {

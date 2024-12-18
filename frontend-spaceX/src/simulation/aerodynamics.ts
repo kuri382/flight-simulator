@@ -74,8 +74,8 @@ export class Aerodynamics {
 
         // Direction: Start from Y axis
         const thrustDir = new THREE.Vector3(0, 1, 0);
-        // Apply rotations in order Z->Y->X or as needed. 
-        // Here Euler is 'ZYX', meaning first rotate about Z, then Y, then X. 
+        // Apply rotations in order Z->Y->X or as needed.
+        // Here Euler is 'ZYX', meaning first rotate about Z, then Y, then X.
         // Make sure the chosen order aligns with input definition.
         const thrustRot = new THREE.Euler(thrustPitch, thrustYaw, 0, 'ZYX');
         const thrustMat = new THREE.Matrix4().makeRotationFromEuler(thrustRot);
@@ -97,16 +97,15 @@ export class Aerodynamics {
         const Fy_fin = 0; // simplified: no Y-direction force from fins
 
         // Compute moments
-        // For thrust: if thruster is not at CG, we do r x F
+        // Thrust
         const thrusterForceVec = new THREE.Vector3(Fx_thrust, Fy_thrust, Fz_thrust);
         const M_thrust = new THREE.Vector3().crossVectors(this.thrusterPosition, thrusterForceVec);
 
-        // For fins:
-        // Pitch fin force acts in X-direction at Z=2m offset
+        // Pitch fin force
         const finForcePitchVec = new THREE.Vector3(Fx_fin, 0, 0);
         const M_finPitch = new THREE.Vector3().crossVectors(this.finArmPitch, finForcePitchVec);
 
-        // Yaw fin force acts in Z-direction at X=2m offset
+        // Yaw fin force
         const finForceYawVec = new THREE.Vector3(0, 0, Fz_fin);
         const M_finYaw = new THREE.Vector3().crossVectors(this.finArmYaw, finForceYawVec);
 
@@ -122,7 +121,6 @@ export class Aerodynamics {
         const Fz_total = Fz_normal + Fz_thrust + Fz_fin;
 
         // Total moments
-        // Add thrust moment and fin moment. Aerodynamic moment from the main body could be added if modeled.
         const Mx_total = M_thrust.x + M_fin.x;
         const My_total = M_thrust.y + M_fin.y;
         const Mz_total = M_thrust.z + M_fin.z;

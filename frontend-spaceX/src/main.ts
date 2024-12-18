@@ -24,7 +24,7 @@ import { updateAltitudeDisplay } from './chart/state/altitude';
 import { updateSpeedDisplay } from './chart/state/speed';
 import { createTerrain } from './animation/terrain';
 import { createHorizon } from './animation/horizon';
-import { createYellowLine } from './animation/runway';
+import { createRunway } from './animation/runway';
 import { Exhaust } from './animation/exhaust';
 
 // chart settings
@@ -62,7 +62,7 @@ const destination = {
 };
 // ミッション達成判定用のしきい値
 const missionHorizontalThreshold = 100; // 半径100m以内の到達
-const missionAltitudeThreshold = 4; // 半径100m以内の到達で
+const missionAltitudeThreshold = 4; // 高度4m以下への到達
 
 // アニメーションシーンの初期化
 const { scene: mainScene, camera: mainCamera, renderer: mainRenderer } = initScene(threeCanvas);
@@ -104,7 +104,7 @@ loadModel(mainScene, '/models/environment/launch_site.glb', 1.0, { x: 0, y: 0, z
 const terrain = createTerrain();
 const horizon = createHorizon();
 const clouds = createClouds();
-const yellowLine = createYellowLine();
+const yellowLine = createRunway();
 mainScene.add(terrain);
 mainScene.add(horizon);
 mainScene.add(yellowLine);
@@ -131,7 +131,7 @@ const aircraft = new Aircraft(
 );
 
 // シミュレーションサイクルの設定
-const simManager = new SimulationManager(aircraft, 0.1); // ms
+const simManager = new SimulationManager(aircraft, 0.05); // ms
 let stopSimulation = false;
 let lastTime = performance.now();
 
@@ -228,6 +228,12 @@ function animate() {
     orientationChart.update();
     flightParamsChart.update();
 
+    mainCamera.position.set(
+        state.position[0] + 30,
+        state.position[1] + 15,
+        state.position[2] + 10
+    );
+
     controls.target.set(
         state.position[0],
         state.position[1] + 10,
@@ -242,6 +248,6 @@ function animate() {
 setTimeout(() => {
     console.log('シミュレーションを停止しました。');
     stopSimulation = true;
-}, 3 * 60 * 1000);
+}, 10 * 60 * 1000);
 
 animate();
