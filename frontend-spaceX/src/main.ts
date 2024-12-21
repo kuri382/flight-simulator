@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { initScene } from './three/initScene';
 import { initControls } from './three/initControls';
 import { loadModel } from './three/loadModel';
+import { drawMap } from './three/map';
 
 // ui settings
 import { getInputs } from './ui/ui';
@@ -60,6 +61,8 @@ const destination = {
     position: [300, 1, 300] as [number, number, number],
     velocity: [20, 0, 0] as [number, number, number]
 };
+const startPoint = [...initialState.position] as [number, number, number];
+
 // ミッション達成判定用のしきい値
 const missionHorizontalThreshold = 100; // 半径100m以内の到達
 const missionAltitudeThreshold = 4; // 高度4m以下への到達
@@ -208,6 +211,7 @@ function animate() {
 
         updateAltitudeDisplay(state.position[1]);
         updateSpeedDisplay(airspeed);
+        drawMap(state.position, startPoint, destination.position);
 
         throttleSound.updateThrottle(inputs.throttle);
         airspeedSound.updateThrottle(airspeed);
