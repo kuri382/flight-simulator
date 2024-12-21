@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Falcon 9 Launch with Three.js</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #launchBtn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: #fff;
+            cursor: pointer;
+            z-index: 9999;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="launchBtn">Launch Rocket</button>
+    <canvas id="canvas"></canvas>
+    <script type="module" src="/src/test.js"></script>
+</body>
+
+</html>

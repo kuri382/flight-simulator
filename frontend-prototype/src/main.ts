@@ -8,22 +8,24 @@ import { getInputs } from './ui';
 import { SimulationManager } from './simulation/simulationManager';
 import { Aircraft } from './simulation/aircraft';
 import { Aerodynamics } from './simulation/aerodynamics';
-import { Integrator } from './simulation/integrator';
 import { State } from './simulation/interfaces';
 import { Environment } from './simulation/environment';
 
 // animation settings
 import { createClouds } from './animation/cloud';
-import { updateAltitudeDisplay } from './animation/altitude';
+import { updateAltitudeDisplay } from './chart/state/altitude';
+import { updateSpeedDisplay } from './chart/state/speed';
 import { createTerrain } from './animation/terrain';
 import { createHorizon } from './animation/horizon';
-import { createExhaust, updateExhaust } from './animation/exhaust';
+import { createYellowLine } from './animation/runway';
 
 // chart settings
 import { updatePositionChart } from './chart/update/position';
 import { updateOrientationChart } from './chart/update/orientation';
 import { updateFlightParamChart } from './chart/update/flightParam';
 
+// audio settings
+import { ThrottleSoundController } from './config/audioContoller';
 
 const positionCanvas = document.getElementById('positionChart') as HTMLCanvasElement;
 const orientationCanvas = document.getElementById('orientationChart') as HTMLCanvasElement;
@@ -48,42 +50,51 @@ const initialState: State = {
 const { scene: mainScene, camera: mainCamera, renderer: mainRenderer } = initScene(threeCanvas);
 const { scene: subScene, camera: subCamera, renderer: subRenderer } = initScene(subCanvas);
 
-// サブカメラの設定
-subCamera.position.set(0, 5, 10);
-subCamera.lookAt(0, 0, 0);
-
 // モデルの読み込み
 let aircraftMesh: THREE.Object3D | null = null;
+let aircraftMeshSub: THREE.Object3D | null = null;
+
 loadModel(mainScene, '/models/Su-57.obj').then((model) => {
     aircraftMesh = model;
-    subScene.add(model.clone()); // サブシーンにクローンを追加
+
+    // サブシーン用にもクローンを作成し保持
+    aircraftMeshSub = model.clone();
+    aircraftMeshSub.name = 'subAircraft';
+    subScene.add(aircraftMeshSub);
+
+    // カメラをコックピット付近に配置 (値は機体モデルに合わせて微調整)
+    aircraftMeshSub.add(subCamera);
+    subCamera.position.set(1, 5.5, 0);    // 機体中心から上方向へ1.5m程度
+    subCamera.lookAt(3, 0.1, 0);        // 前方を覗き込むように
 });
+
+const throttleSound = new ThrottleSoundController(mainScene, mainCamera, '/sounds/jet-sound.mp3');
+const airspeedSound = new ThrottleSoundController(mainScene, mainCamera, '/sounds/barner-sound.mp3');
 
 // 背景モデルの追加
 const terrain = createTerrain();
-mainScene.add(terrain);
-const exhaustParticles = createExhaust(mainScene);
 const horizon = createHorizon();
-mainScene.add(horizon);
 const clouds = createClouds();
+const yellowLine = createYellowLine();
+mainScene.add(terrain);
+mainScene.add(horizon);
+mainScene.add(yellowLine);
 clouds.forEach(cloud => mainScene.add(cloud));
 
 // シミュレーション関連
 const aircraft = new Aircraft(
     initialState,
-    1000,
-    [1000, 1000, 1000],
+    2000,
+    [700, 1500, 3000], // kg m^2
     new Aerodynamics(),
     new Environment(),
 );
-const integrator = new Integrator();
-const simManager = new SimulationManager(aircraft, 0.005);
+const simManager = new SimulationManager(aircraft, 0.01);
 
 let stopSimulation = false;
 
 function animate() {
     if (stopSimulation) return;
-
     requestAnimationFrame(animate);
 
     const uiInputs = getInputs();
@@ -97,76 +108,54 @@ function animate() {
 
     simManager.step(inputs);
     const state = simManager.getState();
+    const airspeed = Math.sqrt(
+        state.velocityBody[0] ** 2 + state.velocityBody[1] ** 2 + state.velocityBody[2] ** 2
+    );
+    const angleOfAttack = Math.atan2(state.velocityBody[1], state.velocityBody[0]);
 
     if (aircraftMesh) {
-        aircraftMesh.position.set(state.position[0], state.position[1], state.position[2]);
         const q = new THREE.Quaternion(
             state.orientation[1],
             state.orientation[2],
             state.orientation[3],
             state.orientation[0]
         );
+        // mainScene機体
+        aircraftMesh.position.set(state.position[0], state.position[1], state.position[2]);
         aircraftMesh.setRotationFromQuaternion(q);
 
-        const aircraftPosition = new THREE.Vector3(
-            state.position[0],
-            state.position[1],
-            state.position[2]
-        );
-
+        // mainCamera(外部視点カメラ)
         mainCamera.position.set(
-            state.position[0] + 20,
-            state.position[1] + 10,
-            state.position[2] + 40
+            state.position[0] + 5,
+            state.position[1] + 2,
+            state.position[2] + 5,
         );
-        mainCamera.lookAt(
-            state.position[0] + 10,
-            state.position[1],
-            state.position[2]
-        );
-        mainCamera.rotation.set(
-            THREE.MathUtils.degToRad(0), // X軸回転
-            THREE.MathUtils.degToRad(90), // Y軸回転
-            THREE.MathUtils.degToRad(0)   // Z軸回転
-        );
+        mainCamera.lookAt(state.position[0], state.position[1], state.position[2]);
+        aircraftMesh.add(subCamera);
 
-        const airspeedDirection = new THREE.Vector3(
-            state.velocityBody[0],
-            state.velocityBody[1],
-            state.velocityBody[2]
-        ).normalize();
+        updateAltitudeDisplay(state.position[1]);
+        updateSpeedDisplay(airspeed);
 
-        // 噴射を更新
-        updateExhaust(exhaustParticles, aircraftPosition);
-
-        // 高度表示の更新
-        updateAltitudeDisplay(state.position[2]);
+        throttleSound.updateThrottle(inputs.throttle);
+        airspeedSound.updateThrottle(airspeed);
     }
-
-    const angleOfAttack = Math.atan2(state.velocityBody[2], state.velocityBody[0]) * (180 / Math.PI);
-    const airspeed = Math.sqrt(
-        state.velocityBody[0] ** 2 + state.velocityBody[1] ** 2 + state.velocityBody[2] ** 2
-    );
 
     const timeSeries = simManager.getTimeSeriesData();
     const lastPoint = timeSeries[timeSeries.length - 1];
 
-    // 各チャートにデータを追加
     updatePositionChart(positionChart, state, lastPoint);
     updateOrientationChart(orientationChart, state, lastPoint);
     updateFlightParamChart(flightParamsChart, angleOfAttack, airspeed, lastPoint);
 
-    // 各チャートを更新
     positionChart.update();
     orientationChart.update();
     flightParamsChart.update();
 
-    // レンダリング
     mainRenderer.render(mainScene, mainCamera);
-    subRenderer.render(subScene, subCamera);
+    subRenderer.render(mainScene, subCamera);
 }
 
-// 3分後にシミュレーションを停止
+// シミュレーションタイマー
 setTimeout(() => {
     console.log('シミュレーションを停止しました。');
     stopSimulation = true;

@@ -4,9 +4,9 @@ export function createClouds(): THREE.Mesh[] {
   const cloudGeometry = new THREE.SphereGeometry(1, 16, 16);
   const cloudMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
-  const cloudCount = 100; // 表示する雲の数
+  const cloudCount = 1000; // 表示する雲の数
 
-  const areaWidth = 2000; // X方向の範囲
+  const areaWidth = 1000; // X方向の範囲
   const areaHeight = 2000; // Z方向の範囲
 
   const clouds: THREE.Mesh[] = [];
@@ -15,9 +15,9 @@ export function createClouds(): THREE.Mesh[] {
     const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
 
     cloud.scale.set(
-      Math.random() * 2 + 0.5, // ランダムなサイズ
-      Math.random() * 2 + 0.5,
-      Math.random() * 2 + 0.5
+      Math.random() * 0.7, // ランダムなサイズ
+      Math.random() * 0.7,
+      Math.random() * 0.7
     );
 
     cloud.position.set(
